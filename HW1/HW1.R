@@ -25,9 +25,4 @@ denom <- log(
   base = b
 )
 
-
-# p.AA <- 
-#   
-# p.TT <- 
-#   
-
+#abaondoned R becuase of denom underflow :/

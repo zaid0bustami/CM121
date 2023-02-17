@@ -20,24 +20,27 @@ raw.counts %>%
   rename(gene = rowname) %>% 
   ggplot(aes(x = X1, y = X3)) +
   geom_point() +
-  labs(title = "Raw Counts for X1 vs X3", subtitle = paste("slope of blue line =", Nj[3]/Nj[1], "\nslope of red line = 1")) +
+  labs(title = "Raw Counts for X3 vs X1") +
   geom_abline(aes(intercept = 0, slope = 1), color = "red") +
-  geom_abline(aes(intercept = 0, slope = Nj[3]/Nj[1]), color = "blue")
+  geom_abline(aes(intercept = 5, slope = Nj[3]/Nj[1]), color = "blue") +
+  geom_text(x=200, y=250, label="y = x", angle=8, color = "red") +
+  geom_text(x=200, y=2100, label="y = 10x", angle=30, color = "blue")
 
 
 #
 #### 1(b) ####
 normalizers <- function(mat){
-  sjg <- apply((mat + 1), 1, function(row){ #add a psuedocount of 1
-    denom <- prod(row) ^ (1 / length(row))
-    x <- sapply(row, function(Xjg){
+  sjg <- apply((mat + 1), 1, function(row){ #mat + 1 adds a psuedocount of 1
+    N <- length(row)
+    denom <- prod(row) ^ (1 / N) #calculate the denominator
+    x <- sapply(row, function(Xjg){ #divide each jth entry in the row by denom
       return(Xjg / denom)
     })
     return(x)
   }) %>% t
-  colnames(sjg) <- paste0("s", c(1:ncol(sjg)), "g")
-  sj <- apply(sjg, 2, median)
-  return(list(sjg, sj))
+  colnames(sjg) <- paste0("s", c(1:ncol(sjg)), "g") #rename columns
+  sj <- apply(sjg, 2, median) #calculate the median s value for each j
+  return(list(sjg, sj)) #returns a list with the sj values for each gene and sample specific normalization factors
   }
 z <- normalizers(raw.counts)
 
@@ -56,9 +59,11 @@ z[[1]] %>%
   as_tibble() %>% 
   ggplot(aes(x = s1g, y = s3g))+
   geom_point() +
-  labs(title = "Scatterplot of s3g vs s1g Values")
+  labs(title = "Scatterplot of s3g vs s1g Values") +
+  scale_x_continuous(limits = c(0, 6))
 
 
+#
 #### 1(d) ####
 normalized.counts <- apply(raw.counts, 1, function(row){
   x = row / z[[2]]
@@ -71,9 +76,11 @@ normalized.counts %>%
   rename(gene = rowname) %>% 
   ggplot(aes(x = Y1, y = Y3)) +
   geom_point() +
-  labs(title = "Raw Counts for Y1 vs Y3", subtitle = "slope of line = 1") +
-  geom_abline(aes(intercept = 0, slope = 1), color = "red")
+  labs(title = "Normalized Counts for Y3 vs Y1") +
+  geom_abline(aes(intercept = 0, slope = 1), color = "red") +
+  geom_text(x=550, y=580, label="y = x", angle=30, color = "red")
 
+#
 #### 1(e) ####
 Nj.2 <- c(1e6, 1e6, 1e6)
 # matrix containing the simulations
@@ -86,6 +93,7 @@ colnames(raw.counts.2) <- paste0("X", j)
 # estimating sjg and sj
 z.2 <- normalizers(raw.counts.2)
 
+#
 #### 1(f) ####
 qj <- read.table("HW2/q.tsv")$V1
 Nj.3 <- c(1e6, 1e6, 1e6)
@@ -99,7 +107,7 @@ colnames(raw.counts.3) <- paste0("X", j)
 # estimating sjg and sj
 z.3 <- normalizers(raw.counts.3)
 
-
+#
 #### 1(g) ####
 raw.counts.4 <- cbind(raw.counts.2, raw.counts.3)
 j.4 <- 1:6
@@ -116,5 +124,12 @@ normalized.counts.4 %>%
   rename(gene = rowname) %>% 
   ggplot(aes(x = Y1, y = Y6)) +
   geom_point() +
-  labs(title = "Raw Counts for Y1 vs Y6", subtitle = "slope of line = 1") +
-  geom_abline(aes(intercept = 0, slope = 1), color = "red")
+  labs(title = "Normalized Counts for Y6 vs Y1") +
+  geom_abline(aes(intercept = 0, slope = 1), color = "red") +
+  geom_text(x=10500, y=12500, label="y = x", angle=10, color = "red")
+cbind(pj, qj) %>% 
+  as_tibble() %>% 
+  ggplot(aes(x = pj, y = qj)) +
+  geom_point() +
+  labs(title = "Scatterplot of qj vs pj")
+  

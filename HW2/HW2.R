@@ -132,4 +132,11 @@ cbind(pj, qj) %>%
   ggplot(aes(x = pj, y = qj)) +
   geom_point() +
   labs(title = "Scatterplot of qj vs pj")
-  
+cbind(pj, qj) %>% 
+  as_tibble() %>% 
+  pivot_longer(cols = c("pj", "qj"), names_to = "distribution", values_to = "probability") %>% 
+  ggplot(aes(x = probability, fill = distribution)) +
+  geom_density(alpha = 0.4) +
+  scale_fill_viridis_d() +
+  labs(title = "Distributions of pj and qj") +
+  scale_x_sqrt()

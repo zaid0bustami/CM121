@@ -1,5 +1,7 @@
 library(Rsamtools)
 library(tidyverse)
+library(reticulate)
+reticulate::source_python("Proj1.py")
 
 bamObj <- BamFile("data/align_sort.bam")
 pileupObj <- pileup(bamObj)

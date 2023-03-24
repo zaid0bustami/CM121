@@ -1,24 +1,24 @@
 ####Packages####
 library(Rsamtools, quietly = TRUE)
-library(tidyverse, quietly = TRUE)
-library(Dict, quietly = TRUE)
+library(dplyr, quietly = TRUE)
+library(stringr, quietly = TRUE)
+library(tidyr, quietly = TRUE)
+library(tibble, quietly = TRUE)
 
 ####Command Line Stuff####
 # setwd(getwd())
 args <- commandArgs(trailingOnly = TRUE)
 bamName <- args[1]
 metaName <- args[2]
+# bamName <- "align_sort.bam"
+# metaName <- "putatative_snps.tsv"
 
 ####Helper Functions####
 # get the complement of a given base
 complement <- function(base){
-  bases <- Dict$new(
-    "A" = "T",
-    "T" = "A",
-    "C" = "G",
-    "G" = "C"
-  )
-  return(bases[base])
+  bases <- matrix(c("A", "T", "C", "G", "T", "A", "G", "C"), ncol = 2)
+  cBase <- bases[,2][bases[,1] == base]
+  return(cBase)
 }
 
 ####SNP Caller####

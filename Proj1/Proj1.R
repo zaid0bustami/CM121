@@ -1,9 +1,15 @@
 ####Packages####
-library(Rsamtools)
-library(tidyverse)
-library(Dict)
+library(Rsamtools, quietly = TRUE)
+library(tidyverse, quietly = TRUE)
+library(Dict, quietly = TRUE)
 
-####Functions####
+####Command Line Stuff####
+# setwd(getwd())
+args <- commandArgs(trailingOnly = TRUE)
+bamName <- args[1]
+metaName <- args[2]
+
+####Helper Functions####
 # get the complement of a given base
 complement <- function(base){
   bases <- Dict$new(
@@ -15,7 +21,7 @@ complement <- function(base){
   return(bases[base])
 }
 
-####Inputs####
+####SNP Caller####
 #generate posterior probabilities for possible genotypes, assuming biallelic model
 #finish translating to R
 #supply a dataframe with the reference and alternate alleles, minor allele freq, observed reads, and probability of error
@@ -47,16 +53,31 @@ posteriorProbs <- function(df){
   ppAA = exp(llAA + log(pAA) - log(d))
   ppBB = exp(llBB + log(pBB) - log(d))
   ppAB = exp(llAB + log(pAB) - log(d))
+  
+  if (ppAA > ppBB && ppAA > ppAB){
+    G = paste0(A, A)
+    p = ppAA
+  } else if (ppBB > ppAA && ppBB > ppAB){
+    G = paste0(B, B)
+    p = ppBB
+  }else{
+    G = paste0(A, B)
+    p = ppAB
+  }
+  
   ef <- tibble(
     "AA" = ppAA,
     "BB" = ppBB,
-    "AB" = ppAB
+    "AB" = ppAB,
+    "putative_genotype" = G,
+    "posterior_probability" = p,
+    "n_reads" = nrow(df)
   )
   return (ef)
 }
 
 #read in bam as a bam object
-bamObj <- BamFile("Proj1/data/align_sort.bam")
+bamObj <- BamFile(paste0("data/", bamName))
 
 #run pileup on bam object to get number of each read at the putatuve snp positions
 pileupObj <- pileup(bamObj)
@@ -71,7 +92,7 @@ qualityDf <- data.frame(chr = scanBam(bamObj)[[1]]$rname,
   as_tibble()
 
 #create table giving read counts for each putative snp
-snps <- read.table("Proj1/data/putatative_snps.tsv", sep = "\t", header = TRUE) %>%
+snps <- read.table(paste0("data/", metaName), sep = "\t", header = TRUE) %>%
   as_tibble()
 
 snpsReads <- snps %>% 
@@ -103,15 +124,17 @@ reads <- apply(snpsOriented, 1, function(r){
   unnest(cols = value)
 
 # output the posterior probabilities of each genotype for each position
-result <- reads %>% 
+posteriorDf <- reads %>% 
   split(f = reads$pos) %>% 
-  lapply(mutate, pos = NULL) %>% 
+  lapply(mutate, pos = NULL, n_reads = nrow(reads)) %>% 
   lapply(posteriorProbs) %>% 
   enframe(name = "pos") %>% 
   mutate(pos = as.numeric(pos)) %>% 
   unnest(value) %>% 
   left_join(snps, by = "pos")
 
-####Analysis####
-# readGAlignments(get seq and qual)
-# Granges(go to a particular pos)
+#output the final result in the proper format
+result <- posteriorDf %>% 
+  select(chr, pos, putative_genotype, posterior_probability, n_reads)
+print(result)
+####Alignment####

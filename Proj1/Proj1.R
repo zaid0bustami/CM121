@@ -6,7 +6,6 @@ library(tidyr, quietly = TRUE)
 library(tibble, quietly = TRUE)
 
 ####Command Line Stuff####
-# setwd(getwd())
 args <- commandArgs(trailingOnly = TRUE)
 bamName <- args[1]
 metaName <- args[2]
@@ -118,7 +117,7 @@ reads <- apply(snpsOriented, 1, function(r){
          "alt" = r["alt"],
          "maf" = r["maf"] %>% as.numeric(),
          "observations" = rep(r["nucleotide"], r["count"]), 
-         "probability_of_error" = qualityDf$probability_of_error[1])#r["probability_of_error"]) #FIX THIS
+         "probability_of_error" = qualityDf$probability_of_error[1])
 }) %>% 
   enframe(name = NULL) %>% 
   unnest(cols = value)
@@ -137,4 +136,4 @@ posteriorDf <- reads %>%
 result <- posteriorDf %>% 
   select(chr, pos, putative_genotype, posterior_probability, n_reads)
 print(result)
-####Alignment####
+write.table(result, file='data/snps.tsv', quote=FALSE, sep='\t')
